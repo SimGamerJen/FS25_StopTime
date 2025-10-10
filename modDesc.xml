@@ -4,6 +4,9 @@
     <version>1.0.0.0</version>
     <title>Stop Time</title>
     <description>Allows me top stop time using '0'</description>
+	
+	<iconFilename>StopTime.dds</iconFilename>
+	  
     <extraSourceFiles>
         <sourceFile filename="scripts/stoptime.lua"/>
     </extraSourceFiles>
