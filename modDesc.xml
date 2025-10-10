@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modDesc descVersion="99">
+    <author>Sim Gamer Jen</author>
+    <version>1.0.0.0</version>
+    <title>Stop Time</title>
+    <description>Allows me top stop time using '0'</description>
+    <extraSourceFiles>
+        <sourceFile filename="scripts/stoptime.lua"/>
+    </extraSourceFiles>
+</modDesc>
