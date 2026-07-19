@@ -1,12 +1,75 @@
-<?xml version="1.0" encoding="utf-8"?>
-<modDesc descVersion="99">
-    <author>Sim Gamer Jen</author>
-    <version>1.0.0.0</version>
-    <title>Stop Time</title>
-    <description>Allows me top stop time using '0'</description>
-	
-	<iconFilename>StopTime.dds</iconFilename>
-	  
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<modDesc descVersion="110">
+    <author>SimGamerJen</author>
+    <version>1.1.0.0</version>
+
+    <title>
+        <en>Stop Time</en>
+        <de>Zeit anhalten</de>
+        <fr>Arrêt du temps</fr>
+    </title>
+
+    <description>
+        <en><![CDATA[
+Stop or resume the in-game clock with one configurable control.
+
+Time resumes at the speed that was active before it was stopped. In multiplayer, only the host or a player logged in as server administrator can change the time scale.
+
+Default control: 0
+        ]]></en>
+        <de><![CDATA[
+Halte die Spielzeit mit einer konfigurierbaren Steuerung an oder setze sie fort.
+
+Die Zeit wird mit der Geschwindigkeit fortgesetzt, die vor dem Anhalten aktiv war. Im Mehrspielermodus können nur der Host oder ein als Serveradministrator angemeldeter Spieler die Zeitskalierung ändern.
+
+Standardsteuerung: 0
+        ]]></de>
+        <fr><![CDATA[
+Arrêtez ou reprenez l'horloge du jeu à l'aide d'une commande configurable.
+
+Le temps reprend à la vitesse qui était active avant son arrêt. En multijoueur, seul l'hôte ou un joueur connecté en tant qu'administrateur du serveur peut modifier l'échelle de temps.
+
+Commande par défaut : 0
+        ]]></fr>
+    </description>
+
+    <iconFilename>StopTime.dds</iconFilename>
+
+    <l10n>
+        <text name="input_STOPTIME_TOGGLE">
+            <en>Stop Time: Stop / Resume Time</en>
+            <de>Zeit anhalten: Zeit anhalten / fortsetzen</de>
+            <fr>Arrêt du temps : arrêter / reprendre le temps</fr>
+        </text>
+        <text name="stoptime_timeStopped">
+            <en>Stop Time: Time stopped</en>
+            <de>Zeit anhalten: Zeit angehalten</de>
+            <fr>Arrêt du temps : temps arrêté</fr>
+        </text>
+        <text name="stoptime_timeResumed">
+            <en>Stop Time: Time resumed</en>
+            <de>Zeit anhalten: Zeit fortgesetzt</de>
+            <fr>Arrêt du temps : temps repris</fr>
+        </text>
+        <text name="stoptime_adminOnly">
+            <en>Stop Time: Only the host or a logged-in server administrator can change the time scale</en>
+            <de>Zeit anhalten: Nur der Host oder ein angemeldeter Serveradministrator kann die Zeitskalierung ändern</de>
+            <fr>Arrêt du temps : seul l'hôte ou un administrateur du serveur connecté peut modifier l'échelle de temps</fr>
+        </text>
+    </l10n>
+
+    <actions>
+        <action name="STOPTIME_TOGGLE" category="SYSTEM" axisType="HALF"/>
+    </actions>
+
+    <inputBinding>
+        <actionBinding action="STOPTIME_TOGGLE">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_0"/>
+        </actionBinding>
+    </inputBinding>
+
+    <multiplayer supported="true"/>
+
     <extraSourceFiles>
         <sourceFile filename="scripts/stoptime.lua"/>
     </extraSourceFiles>
