@@ -1,13 +1,30 @@
 -- Stop Time
--- FS25-compatible time-scale toggle with multiplayer host/admin protection.
+-- Vehicle-safe input handling based on the original working implementation.
 
-StopTime = StopTime or {}
+FreezeTimeMod = {}
 
-StopTime.FROZEN_TIME_SCALE = 0.0001
-StopTime.STOPPED_THRESHOLD = 0.001
-StopTime.DEFAULT_RESUME_TIME_SCALE = 1
-StopTime.actionEventId = nil
-StopTime.lastTimeScale = StopTime.DEFAULT_RESUME_TIME_SCALE
+local MOD_VERSION = "1.1.0.7"
+local MESSAGE_DURATION_MS = 4000
+local MESSAGE_X = 0.985
+local MESSAGE_Y = 0.855
+local MESSAGE_TEXT_SIZE = 0.020
+local freezeKey = Input.KEY_0
+local isFrozen = false
+
+FreezeTimeMod.keyHandled = false
+FreezeTimeMod.lastTimeScale = 1
+FreezeTimeMod.messageText = nil
+FreezeTimeMod.messageRemainingMs = 0
+
+local function logInfo(formatString, ...)
+    local message = string.format(formatString, ...)
+
+    if Logging ~= nil and Logging.info ~= nil then
+        Logging.info("[FS25_StopTime] %s", message)
+    else
+        print(string.format("[FS25_StopTime] %s", message))
+    end
+end
 
 local function getCurrentTimeScale()
     if g_currentMission == nil or g_currentMission.missionInfo == nil then
@@ -17,161 +34,179 @@ local function getCurrentTimeScale()
     return tonumber(g_currentMission.missionInfo.timeScale)
 end
 
-function StopTime:getIsTimeStopped()
-    local timeScale = getCurrentTimeScale()
-    return timeScale ~= nil and timeScale <= self.STOPPED_THRESHOLD
-end
-
-function StopTime:getCanChangeTimeScale()
+local function getMissionRoleState()
     local mission = g_currentMission
-    if mission == nil or not mission:getIsClient() then
-        return false
+    if mission == nil then
+        return false, false, false
     end
 
-    return mission:getIsServer() or mission.isMasterUser == true
+    local isClient = mission.getIsClient ~= nil and mission:getIsClient()
+    local isServer = mission.getIsServer ~= nil and mission:getIsServer()
+    local isMasterUser = mission.isMasterUser == true
+
+    return isClient, isServer, isMasterUser
 end
 
-function StopTime:showNotification(textKey)
-    if g_currentMission == nil or g_i18n == nil then
+function FreezeTimeMod:getCanChangeTimeScale()
+    local isClient, isServer, isMasterUser = getMissionRoleState()
+    return isClient and (isServer or isMasterUser)
+end
+
+function FreezeTimeMod:showText(textKey)
+    if g_currentMission == nil then
         return
     end
 
-    local text = g_i18n:getText(textKey)
-    if g_currentMission.addIngameNotification ~= nil
-            and FSBaseMission ~= nil
-            and FSBaseMission.INGAME_NOTIFICATION_OK ~= nil then
-        g_currentMission:addIngameNotification(FSBaseMission.INGAME_NOTIFICATION_OK, text)
-    elseif g_currentMission.addExtraPrintText ~= nil then
-        g_currentMission:addExtraPrintText(text)
+    local text = textKey
+    if g_i18n ~= nil then
+        text = g_i18n:getText(textKey)
     end
+
+    self.messageText = text
+    self.messageRemainingMs = MESSAGE_DURATION_MS
 end
 
-function StopTime:onToggleTime(actionName, inputValue, callbackState, isAnalog)
-    if g_currentMission == nil or g_gui == nil or g_gui.currentGui ~= nil then
+function FreezeTimeMod:updateMessage(dt)
+    if self.messageText == nil or self.messageRemainingMs <= 0 then
         return
     end
 
+    self.messageRemainingMs = math.max(self.messageRemainingMs - dt, 0)
+    if self.messageRemainingMs == 0 then
+        self.messageText = nil
+    end
+end
+
+function FreezeTimeMod:draw()
+    if self.messageText == nil
+            or self.messageRemainingMs <= 0
+            or renderText == nil
+            or setTextAlignment == nil
+            or setTextColor == nil
+            or RenderText == nil then
+        return
+    end
+
+    setTextAlignment(RenderText.ALIGN_RIGHT)
+    if setTextBold ~= nil then
+        setTextBold(true)
+    end
+
+    -- A small shadow keeps the message readable without putting it in a HUD panel.
+    setTextColor(0, 0, 0, 0.8)
+    renderText(MESSAGE_X + 0.001, MESSAGE_Y - 0.0015, MESSAGE_TEXT_SIZE, self.messageText)
+
+    -- Match the original Stop Time message: independent green text at upper right.
+    setTextColor(0.35, 0.90, 0.10, 1)
+    renderText(MESSAGE_X, MESSAGE_Y, MESSAGE_TEXT_SIZE, self.messageText)
+
+    if setTextBold ~= nil then
+        setTextBold(false)
+    end
+    setTextColor(1, 1, 1, 1)
+    setTextAlignment(RenderText.ALIGN_LEFT)
+end
+
+function FreezeTimeMod:toggleTime()
+    local isClient, isServer, isMasterUser = getMissionRoleState()
     if not self:getCanChangeTimeScale() then
-        self:showNotification("stoptime_adminOnly")
+        logInfo(
+            "toggle blocked by multiplayer permissions (client=%s, server=%s, masterUser=%s)",
+            tostring(isClient),
+            tostring(isServer),
+            tostring(isMasterUser)
+        )
+        self:showText("stoptime_adminOnly")
         return
     end
 
-    if self:getIsTimeStopped() then
-        local resumeTimeScale = tonumber(self.lastTimeScale) or self.DEFAULT_RESUME_TIME_SCALE
-        if resumeTimeScale <= self.STOPPED_THRESHOLD then
-            resumeTimeScale = self.DEFAULT_RESUME_TIME_SCALE
-        end
+    isFrozen = not isFrozen
 
-        g_currentMission:setTimeScale(resumeTimeScale)
-        self:showNotification("stoptime_timeResumed")
-    else
+    if isFrozen then
         local currentTimeScale = getCurrentTimeScale()
-        if currentTimeScale ~= nil and currentTimeScale > self.STOPPED_THRESHOLD then
+        if currentTimeScale ~= nil and currentTimeScale > 0 then
             self.lastTimeScale = currentTimeScale
         end
 
-        -- A very small positive value behaves as stopped time while avoiding
-        -- simulation problems that can occur when the time scale is exactly 0.
-        g_currentMission:setTimeScale(self.FROZEN_TIME_SCALE)
-        self:showNotification("stoptime_timeStopped")
+        g_currentMission:setTimeScale(0)
+        self:showText("stoptime_timeStopped")
+        logInfo("time stopped (previousScale=%s, appliedScale=0)", tostring(self.lastTimeScale))
+    else
+        local resumeTimeScale = tonumber(self.lastTimeScale) or 1
+        if resumeTimeScale <= 0 then
+            resumeTimeScale = 1
+        end
+
+        g_currentMission:setTimeScale(resumeTimeScale)
+        self:showText("stoptime_timeResumed")
+        logInfo("time resumed (appliedScale=%s)", tostring(resumeTimeScale))
     end
 end
 
-function StopTime:registerActionEvent()
-    if self.actionEventId ~= nil
-            or g_inputBinding == nil
-            or InputAction == nil
-            or InputAction.STOPTIME_TOGGLE == nil then
+function FreezeTimeMod:loadMap(mapName)
+    local currentTimeScale = getCurrentTimeScale()
+    if currentTimeScale ~= nil and currentTimeScale > 0 then
+        self.lastTimeScale = currentTimeScale
+    else
+        self.lastTimeScale = 1
+    end
+
+    isFrozen = false
+    self.keyHandled = false
+    self.messageText = nil
+    self.messageRemainingMs = 0
+
+    local isClient, isServer, isMasterUser = getMissionRoleState()
+    logInfo(
+        "loaded version %s (map=%s, client=%s, server=%s, masterUser=%s, keyApi=%s)",
+        MOD_VERSION,
+        tostring(mapName),
+        tostring(isClient),
+        tostring(isServer),
+        tostring(isMasterUser),
+        tostring(Input ~= nil and Input.isKeyPressed ~= nil and freezeKey ~= nil)
+    )
+end
+
+function FreezeTimeMod:update(dt)
+    if g_currentMission == nil
+            or Input == nil
+            or Input.isKeyPressed == nil
+            or freezeKey == nil then
+        self:updateMessage(dt)
         return
     end
 
-    local registered, actionEventId = g_inputBinding:registerActionEvent(
-        InputAction.STOPTIME_TOGGLE,
-        self,
-        self.onToggleTime,
-        false,
-        true,
-        false,
-        true
-    )
+    if Input.isKeyPressed(freezeKey) then
+        if not self.keyHandled then
+            self.keyHandled = true
 
-    if registered and actionEventId ~= nil then
-        self.actionEventId = actionEventId
+            local isClient, isServer, isMasterUser = getMissionRoleState()
+            logInfo(
+                "KEY_0 detected (vehicle=%s, client=%s, server=%s, masterUser=%s)",
+                tostring(g_currentMission.controlledVehicle ~= nil),
+                tostring(isClient),
+                tostring(isServer),
+                tostring(isMasterUser)
+            )
 
-        if g_inputBinding.setActionEventTextPriority ~= nil and GS_PRIO_VERY_LOW ~= nil then
-            g_inputBinding:setActionEventTextPriority(actionEventId, GS_PRIO_VERY_LOW)
+            self:toggleTime()
         end
-        if g_inputBinding.setActionEventTextVisibility ~= nil then
-            g_inputBinding:setActionEventTextVisibility(actionEventId, true)
-        end
-    end
-end
-
-function StopTime:removeActionEvent()
-    if self.actionEventId ~= nil and g_inputBinding ~= nil then
-        g_inputBinding:removeActionEvent(self.actionEventId)
-    end
-
-    self.actionEventId = nil
-end
-
-function StopTime:loadMap(mapName)
-    local currentTimeScale = getCurrentTimeScale()
-    if currentTimeScale ~= nil and currentTimeScale > self.STOPPED_THRESHOLD then
-        self.lastTimeScale = currentTimeScale
     else
-        self.lastTimeScale = self.DEFAULT_RESUME_TIME_SCALE
+        self.keyHandled = false
     end
+
+    self:updateMessage(dt)
 end
 
-function StopTime:update(dt)
-    -- Keep every connected client aware of the latest running time scale so
-    -- either the host or a logged-in administrator can resume it correctly.
-    local currentTimeScale = getCurrentTimeScale()
-    if currentTimeScale ~= nil and currentTimeScale > self.STOPPED_THRESHOLD then
-        self.lastTimeScale = currentTimeScale
-    end
+function FreezeTimeMod:deleteMap()
+    isFrozen = false
+    self.keyHandled = false
+    self.lastTimeScale = 1
+    self.messageText = nil
+    self.messageRemainingMs = 0
+    logInfo("unloaded version %s", MOD_VERSION)
 end
 
-function StopTime:deleteMap()
-    self:removeActionEvent()
-    self.lastTimeScale = self.DEFAULT_RESUME_TIME_SCALE
-end
-
-local function onRegisterGlobalPlayerActionEvents(playerInputComponent)
-    if playerInputComponent ~= nil
-            and playerInputComponent.player ~= nil
-            and playerInputComponent.player.isOwner then
-        StopTime:registerActionEvent()
-    end
-end
-
-local function onRemoveGlobalPlayerActionEvents(playerInputComponent)
-    if playerInputComponent ~= nil
-            and playerInputComponent.player ~= nil
-            and playerInputComponent.player.isOwner then
-        StopTime:removeActionEvent()
-    end
-end
-
-if PlayerInputComponent ~= nil
-        and PlayerInputComponent.registerGlobalPlayerActionEvents ~= nil
-        and Utils ~= nil
-        and Utils.appendedFunction ~= nil then
-    PlayerInputComponent.registerGlobalPlayerActionEvents = Utils.appendedFunction(
-        PlayerInputComponent.registerGlobalPlayerActionEvents,
-        onRegisterGlobalPlayerActionEvents
-    )
-end
-
-if PlayerInputComponent ~= nil
-        and PlayerInputComponent.removeGlobalPlayerActionEvents ~= nil
-        and Utils ~= nil
-        and Utils.appendedFunction ~= nil then
-    PlayerInputComponent.removeGlobalPlayerActionEvents = Utils.appendedFunction(
-        PlayerInputComponent.removeGlobalPlayerActionEvents,
-        onRemoveGlobalPlayerActionEvents
-    )
-end
-
-addModEventListener(StopTime)
+logInfo("script initialized (version %s)", MOD_VERSION)
+addModEventListener(FreezeTimeMod)

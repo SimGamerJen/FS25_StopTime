@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <modDesc descVersion="110">
     <author>SimGamerJen</author>
-    <version>1.1.0.0</version>
+    <version>1.1.0.7</version>
 
     <title>
         <en>Stop Time</en>
@@ -11,36 +11,31 @@
 
     <description>
         <en><![CDATA[
-Stop or resume the in-game clock with one configurable control.
+Stop or resume the in-game clock by pressing 0.
 
-Time resumes at the speed that was active before it was stopped. In multiplayer, only the host or a player logged in as server administrator can change the time scale.
+Time is set to 0 when stopped and resumes at the speed that was active beforehand. In multiplayer, only the host or a player logged in as server administrator can change the time scale.
 
 Default control: 0
-        ]]></en>
+]]></en>
         <de><![CDATA[
-Halte die Spielzeit mit einer konfigurierbaren Steuerung an oder setze sie fort.
+Halte die Spielzeit mit der Taste 0 an oder setze sie fort.
 
-Die Zeit wird mit der Geschwindigkeit fortgesetzt, die vor dem Anhalten aktiv war. Im Mehrspielermodus können nur der Host oder ein als Serveradministrator angemeldeter Spieler die Zeitskalierung ändern.
+Beim Anhalten wird die Zeitskalierung auf 0 gesetzt. Die Zeit wird mit der Geschwindigkeit fortgesetzt, die zuvor aktiv war. Im Mehrspielermodus können nur der Host oder ein als Serveradministrator angemeldeter Spieler die Zeitskalierung ändern.
 
 Standardsteuerung: 0
-        ]]></de>
+]]></de>
         <fr><![CDATA[
-Arrêtez ou reprenez l'horloge du jeu à l'aide d'une commande configurable.
+Arrêtez ou reprenez l'horloge du jeu en appuyant sur 0.
 
-Le temps reprend à la vitesse qui était active avant son arrêt. En multijoueur, seul l'hôte ou un joueur connecté en tant qu'administrateur du serveur peut modifier l'échelle de temps.
+À l'arrêt, l'échelle de temps est réglée sur 0. Le temps reprend ensuite à la vitesse précédemment active. En multijoueur, seul l'hôte ou un joueur connecté en tant qu'administrateur du serveur peut modifier l'échelle de temps.
 
 Commande par défaut : 0
-        ]]></fr>
+]]></fr>
     </description>
 
     <iconFilename>StopTime.dds</iconFilename>
 
     <l10n>
-        <text name="input_STOPTIME_TOGGLE">
-            <en>Stop Time: Stop / Resume Time</en>
-            <de>Zeit anhalten: Zeit anhalten / fortsetzen</de>
-            <fr>Arrêt du temps : arrêter / reprendre le temps</fr>
-        </text>
         <text name="stoptime_timeStopped">
             <en>Stop Time: Time stopped</en>
             <de>Zeit anhalten: Zeit angehalten</de>
@@ -58,17 +53,46 @@ Commande par défaut : 0
         </text>
     </l10n>
 
-    <actions>
-        <action name="STOPTIME_TOGGLE" category="SYSTEM" axisType="HALF"/>
-    </actions>
-
-    <inputBinding>
-        <actionBinding action="STOPTIME_TOGGLE">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_0"/>
-        </actionBinding>
-    </inputBinding>
-
     <multiplayer supported="true"/>
+
+    <changelog>
+        <en><![CDATA[
+1.1.0.7:
+- Moved the status message out of the F1 help menu and restored it as independent green text at the upper right.
+
+1.1.0.6:
+- Restored the green upper-right status message and extended its display time.
+
+1.1.0.5:
+- Restored the original vehicle-safe mission-level input implementation.
+- Restored an exact 0 time scale when time is stopped.
+- Added focused diagnostic logging for loading, input detection and multiplayer permissions.
+]]></en>
+        <de><![CDATA[
+1.1.0.7:
+- Die Statusmeldung wurde aus dem F1-Hilfemenü entfernt und als eigenständiger grüner Text oben rechts wiederhergestellt.
+
+1.1.0.6:
+- Die grüne Statusmeldung oben rechts wurde wiederhergestellt und ihre Anzeigedauer verlängert.
+
+1.1.0.5:
+- Die ursprüngliche fahrzeugkompatible Eingabeverarbeitung auf Missionsebene wurde wiederhergestellt.
+- Beim Anhalten wird die Zeitskalierung wieder exakt auf 0 gesetzt.
+- Gezielte Diagnoseprotokolle für Laden, Eingabeerkennung und Mehrspielerberechtigungen wurden hinzugefügt.
+]]></de>
+        <fr><![CDATA[
+1.1.0.7 :
+- Le message d'état a été retiré du menu d'aide F1 et rétabli sous forme de texte vert indépendant en haut à droite.
+
+1.1.0.6 :
+- Rétablissement du message d'état vert en haut à droite et prolongation de sa durée d'affichage.
+
+1.1.0.5 :
+- Rétablissement de la gestion d'entrée d'origine au niveau de la mission, compatible avec les véhicules.
+- Rétablissement d'une échelle de temps exactement égale à 0 lorsque le temps est arrêté.
+- Ajout de journaux de diagnostic ciblés pour le chargement, la détection des entrées et les autorisations multijoueur.
+]]></fr>
+    </changelog>
 
     <extraSourceFiles>
         <sourceFile filename="scripts/stoptime.lua"/>
