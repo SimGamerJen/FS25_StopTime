@@ -70,8 +70,8 @@ Other mods that stop, change or extend the available time scales may conflict wi
 
 **SimGamerJen**
 
-## Permissions
-
-Editing or publishing this mod is prohibited without written consent from the mod maker.
+## Licence and Permissions
 
 Copyright © 2026 SimGamerJen. All rights reserved.
+
+You may download and use this mod for personal use. You may not modify, redistribute, re-upload, or publish this mod, in whole or in part, or any derivative version without prior written permission from SimGamerJen.
